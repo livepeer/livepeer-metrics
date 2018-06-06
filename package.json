@@ -1,0 +1,16 @@
+{
+  "name": "livepeer-metrics",
+  "version": "0.0.1",
+  "description": "metrics tracking for Livepeer",
+  "main": "App.js",
+  "author": "ericxtang",
+  "scripts": {
+    "start": "nodemon Server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.18.3",
+    "express": "^4.16.3",
+    "mongoose": "^5.1.4"
+  },
+  "license": "MIT"
+}
