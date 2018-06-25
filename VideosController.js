@@ -15,28 +15,40 @@ router.get('/', function (req, res) {
         for (let event of events) {
             switch (event.event) {
                 case "StreamCreated": 
-                    idx = event.properties["manifestID"] + event.properties["createTime"]
-                    videos[idx] = {manifestID: event.properties["manifestID"], createTime: event.properties["createTime"], success: false}
+                    idx = event.properties["manifestID"] + event.properties["nonce"]
+                    videos[idx] = {manifestID: event.properties["manifestID"], createTime: event.createdAt, success: "unknown"}
                     break;
                 case "StreamEnded": 
-                    idx = event.properties["manifestID"] + event.properties["createTime"]
+                    idx = event.properties["manifestID"] + event.properties["nonce"]
                     video = videos[idx]
                     if (video != null) {
                         //set video end time
-                        video["endTime"] = event.properties["endTime"]
+                        video["endTime"] = event.createdAt
                         //set status to succes
-                        video["success"] = true
+                        video["success"] = "true"
                     } else {
+                        console.log("Cannot find video: " + idx)
                         //something weird has happened
                     }
                     break
                 case "TranscodeSuccess": 
                     //Add to the video's length
                     break
+                case "StreamCreateFailed":
+                    idx = event.properties["manifestID"] + event.createdAt
+                    video["success"] = "false"
+                    break
             }
         }
 
-        res.status(200).send(videos)
+        //Flatten the hash
+        videosArr = []
+        for (let vid in videos) {
+            v = videos[vid]
+            videosArr.push(v)
+        }
+
+        res.status(200).send(videosArr)
     });
 });
 
