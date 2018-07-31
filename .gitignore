@@ -60,3 +60,9 @@ typings/
 
 # next.js build output
 .next
+
+# vscode
+.vscode
+
+# local dev files
+devstart.sh

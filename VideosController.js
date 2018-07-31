@@ -19,6 +19,9 @@ router.get('/', function (req, res) {
                     videos[idx] = {manifestID: event.properties["manifestID"], createTime: event.createdAt, success: "unknown"}
                     break;
                 case "StreamEnded": 
+                    if (!event.properties) {
+                        break;
+                    }
                     idx = event.properties["manifestID"] + event.properties["nonce"]
                     video = videos[idx]
                     if (video != null) {

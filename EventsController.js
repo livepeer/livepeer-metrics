@@ -1,17 +1,21 @@
 // EventController.js
 
-var express = require('express');
-var router = express.Router();
-var bodyParser = require('body-parser');
+const express = require('express');
+const router = express.Router();
+const bodyParser = require('body-parser');
+
 router.use(bodyParser.json());
-var Events = require('./Events');
+
+const Events = require('./Events');
 
 // CREATES A Event
 router.post('/', function (req, res) {
-    if (req.body.event != null) {
+    console.log('v1 got request body:', req.body)
+    const body = req.body;
+    if (body.event != null) {
         Events.create({
-            event: req.body.event,
-            properties: req.body.properties,
+            event: body.event,
+            properties: body.properties,
             createdAt: new Date()
         }).then(event => {
             res.status(200).send("event created successfully")
