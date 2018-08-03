@@ -5,7 +5,7 @@
   "main": "App.js",
   "author": "ericxtang",
   "scripts": {
-    "start": "nodemon Server.js"
+    "start": "nodemon server/Server.js"
   },
   "dependencies": {
     "body-parser": "^1.18.3",
