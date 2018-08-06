@@ -1,3 +1,5 @@
+'use strict'
+
 const mongoose = require('mongoose');
 const EventSchema = new mongoose.Schema({
   event: { type: String },

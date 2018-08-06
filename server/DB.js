@@ -1,3 +1,4 @@
+'use strict'
 // db.js
 
 const base = process.env.LivepeerMetricsMongo;
