@@ -40,14 +40,21 @@ function videosAggregatorInt(events, resolve, reject) {
       createBroadcastClientFailedReasons: {}
       uploadFailedReasons: {}
       transcodeFailedReasons: {}
+      streamCreateFailReasons: {}
     }
   */
   // TODO return fail reasons in separate field, aggregate by days/week..
   const streamCreateFailReasons = {}
+  const createBroadcastClientFailedReasons = {}
+  const uploadFailedReasons = {}
+  const transcodeFailedReasons = {}
 
   for (let event of events) {
     if (!event.nonce) {
       continue
+    }
+    if (!event.properties) {
+      event.properties = {}
     }
     const nonce = event.nonce
     const video = videos[nonce] || (videos[nonce] = {
@@ -67,6 +74,7 @@ function videosAggregatorInt(events, resolve, reject) {
       createBroadcastClientFailedReasons: {},
       uploadFailedReasons: {},
       transcodeFailedReasons: {},
+      streamCreateFailReasons: {},
     })
     switch (event.event) {
       case 'StreamCreated':
@@ -99,11 +107,11 @@ function videosAggregatorInt(events, resolve, reject) {
         video.segmentUploadTimeSum += event.properties.uploadDuration
         break
       case 'SegmentUploadFailed':
-        // TODO global set with reasons?
         video.segmentsUploadFailed++
-        if ((event.properties||{}).reason) {
+        if (event.properties.reason) {
           const reason = event.properties.reason
           video.uploadFailedReasons[reason] = (video.uploadFailedReasons[reason]||0) + 1
+          uploadFailedReasons[reason] = (uploadFailedReasons[reason]||0) + 1
         }
         break
       case 'SegmentTranscoded':
@@ -116,29 +124,32 @@ function videosAggregatorInt(events, resolve, reject) {
         // TODO process segmentsInFlight and seqNoDif
         break
       case 'SegmentTranscodeFailed':
-        vieo.segmentsTranscodeFailed++
-        // TODO save reasons
-        if ((event.properties||{}).reason) {
+        video.segmentsTranscodeFailed++
+        if (event.properties.reason) {
           const reason = event.properties.reason
           video.transcodeFailedReasons[reason] = (video.transcodeFailedReasons[reason]||0) + 1
+          transcodeFailedReasons[reason] = (transcodeFailedReasons[reason]||0) + 1
         }
         // TODO process segmentsInFlight and seqNoDif
         break
       case 'StartBroadcastClientFailed':
         // TODO process this event
         video.createBroadcastClientFailed++
-        if ((event.properties||{}).reason) {
+        if (event.properties.reason) {
           const reason = event.properties.reason
           video.createBroadcastClientFailedReasons[reason] =
             (video.createBroadcastClientFailedReasons[reason]||0) + 1
+          createBroadcastClientFailedReasons[reason] =
+            (createBroadcastClientFailedReasons[reason]||0) + 1
         }
         break
       case 'StreamCreateFailed':
         video.success = 'false'
-        if ((event.properties||{}).reason) {
+        if (event.properties.reason) {
           const reason = event.properties.reason
           video.reason = reason
           streamCreateFailReasons[reason] = (streamCreateFailReasons[reason]||0) + 1
+          video.streamCreateFailReasons[reason] = (video.streamCreateFailReasons[reason]||0) + 1
         }
         break
     }
