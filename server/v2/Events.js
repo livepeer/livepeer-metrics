@@ -12,6 +12,4 @@ const EventSchema = new mongoose.Schema({
   }
 );
 
-module.exports = function (connection) {
-  return connection.model('Event', EventSchema);
-};
+module.exports = mongoose.model('Event', EventSchema);

@@ -1,7 +1,8 @@
 'use strict'
 
 const express = require('express');
-const events = require('./Events');
+const router = express.Router();
+const Events = require('./Events');
 
 function videosAggregator(events) {
   return new Promise(videosAggregatorInt.bind(null, events));
@@ -184,21 +185,17 @@ function videosAggregatorInt(events, resolve, reject) {
   });
 }
 
-module.exports = function (connection) {
-  const router = express.Router();
-  const Events = events(connection);
-
-  router.get('/', function (req, res) {
-    Events.find({}).sort({
-      createdAt: 1
-    }).exec(function (err, events) {
-      if (err) return res.status(500).send('There was a problem finding the video.')
-      videosAggregator(events).then((videosArr) => {
-        // TODO - remove: allow all - temporary, for debugging
-        res.set('Access-Control-Allow-Origin', '*')
-        res.status(200).send(videosArr)
-      });
+router.get('/', function (req, res) {
+  Events.find({}).sort({
+    createdAt: 1
+  }).exec(function (err, events) {
+    if (err) return res.status(500).send('There was a problem finding the video.')
+    videosAggregator(events).then((videosArr) => {
+      // TODO - remove: allow all - temporary, for debugging
+      res.set('Access-Control-Allow-Origin', '*')
+      res.status(200).send(videosArr)
     });
   });
-  return router;
-};
+});
+
+module.exports = router;
