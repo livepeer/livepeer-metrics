@@ -41,9 +41,10 @@ function videosAggregatorInt(events, resolve, reject) {
       uploadFailedReasons: {}
       transcodeFailedReasons: {}
       streamCreateFailReasons: {}
+      segmentsInFlight: Map<int, int>
+      seqNoDif: Map<int, int>
     }
   */
-  // TODO return fail reasons in separate field, aggregate by days/week..
   const streamCreateFailReasons = {}
   const createBroadcastClientFailedReasons = {}
   const uploadFailedReasons = {}
@@ -75,6 +76,8 @@ function videosAggregatorInt(events, resolve, reject) {
       uploadFailedReasons: {},
       transcodeFailedReasons: {},
       streamCreateFailReasons: {},
+      segmentsInFlight: new Map(),
+      seqNoDif: new Map(),
     })
     switch (event.event) {
       case 'StreamCreated':
@@ -110,8 +113,8 @@ function videosAggregatorInt(events, resolve, reject) {
         video.segmentsUploadFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
-          video.uploadFailedReasons[reason] = (video.uploadFailedReasons[reason]||0) + 1
-          uploadFailedReasons[reason] = (uploadFailedReasons[reason]||0) + 1
+          video.uploadFailedReasons[reason] = (video.uploadFailedReasons[reason] || 0) + 1
+          uploadFailedReasons[reason] = (uploadFailedReasons[reason] || 0) + 1
         }
         break
       case 'SegmentTranscoded':
@@ -121,26 +124,36 @@ function videosAggregatorInt(events, resolve, reject) {
           video.timeTillFirstTranscodedSegment = event.createdAt - video.createTime
           video.firstTranscodedSegSeq = event.properties.seqNo
         }
-        // TODO process segmentsInFlight and seqNoDif
+        if (Object.prototype.hasOwnProperty.call(event.properties, 'segmentsInFlight')) {
+          video.segmentsInFlight.set(event.seqNo, event.properties.segmentsInFlight)
+        }
+        if (Object.prototype.hasOwnProperty.call(event.properties, 'seqNoDif')) {
+          video.segmentsInFlight.set(event.seqNo, event.properties.seqNoDif)
+        }
+        // TODO find a way to infer useful information from segmentsInFlight and seqNoDif
         break
       case 'SegmentTranscodeFailed':
         video.segmentsTranscodeFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
-          video.transcodeFailedReasons[reason] = (video.transcodeFailedReasons[reason]||0) + 1
-          transcodeFailedReasons[reason] = (transcodeFailedReasons[reason]||0) + 1
+          video.transcodeFailedReasons[reason] = (video.transcodeFailedReasons[reason] || 0) + 1
+          transcodeFailedReasons[reason] = (transcodeFailedReasons[reason] || 0) + 1
         }
-        // TODO process segmentsInFlight and seqNoDif
+        if (Object.prototype.hasOwnProperty.call(event.properties, 'segmentsInFlight')) {
+          video.segmentsInFlight.set(event.seqNo, event.properties.segmentsInFlight)
+        }
+        if (Object.prototype.hasOwnProperty.call(event.properties, 'seqNoDif')) {
+          video.segmentsInFlight.set(event.seqNo, event.properties.seqNoDif)
+        }
         break
       case 'StartBroadcastClientFailed':
-        // TODO process this event
         video.createBroadcastClientFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.createBroadcastClientFailedReasons[reason] =
-            (video.createBroadcastClientFailedReasons[reason]||0) + 1
+            (video.createBroadcastClientFailedReasons[reason] || 0) + 1
           createBroadcastClientFailedReasons[reason] =
-            (createBroadcastClientFailedReasons[reason]||0) + 1
+            (createBroadcastClientFailedReasons[reason] || 0) + 1
         }
         break
       case 'StreamCreateFailed':
@@ -148,19 +161,27 @@ function videosAggregatorInt(events, resolve, reject) {
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.reason = reason
-          streamCreateFailReasons[reason] = (streamCreateFailReasons[reason]||0) + 1
-          video.streamCreateFailReasons[reason] = (video.streamCreateFailReasons[reason]||0) + 1
+          streamCreateFailReasons[reason] = (streamCreateFailReasons[reason] || 0) + 1
+          video.streamCreateFailReasons[reason] = (video.streamCreateFailReasons[reason] || 0) + 1
         }
         break
     }
   }
 
-  //Flatten the hash
+  // Flatten the hash
   const videosArr = []
   for (let vid in videos) {
     videosArr.push(videos[vid])
   }
-  resolve(videosArr);
+  resolve({
+    videos: videosArr,
+    failuresReasons: {
+      streamCreate: streamCreateFailReasons,
+      createBroadcastClient: createBroadcastClientFailedReasons,
+      upload: uploadFailedReasons,
+      transcode: transcodeFailedReasons
+    }
+  });
 }
 
 module.exports = function (connection) {
