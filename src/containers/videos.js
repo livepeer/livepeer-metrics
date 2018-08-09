@@ -124,7 +124,7 @@ const Overview = ({ overview }) => {
       &nbsp; transcoded: {segments.transcoded} failure rate {segments.failureRate.toFixed(2)}%
     </p>
     <p>Average transcode time: {segments.avgTranscodeDuration} ms</p>
-    <p>starting from {fromTime.toString()} till {toTime.toString()}</p>
+    <p>starting from {fromTime.toString()} till {(toTime||'').toString()}</p>
   </div>)
 }
 
