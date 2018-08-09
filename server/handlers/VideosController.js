@@ -96,7 +96,8 @@ function videosAggregatorInt(events, resolve, reject) {
         video.success = 'true'
         video.streamDuration = video.endTime - video.createTime
         break
-      case 'JobCreated', 'JobReused':
+      case 'JobCreated':
+      case 'JobReused':
         videos[nonce] = {
           ...video,
           ...event.properties
@@ -166,6 +167,7 @@ function videosAggregatorInt(events, resolve, reject) {
           video.streamCreateFailReasons[reason] = (video.streamCreateFailReasons[reason] || 0) + 1
         }
         break
+        default:
     }
   }
 

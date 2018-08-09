@@ -1,13 +1,13 @@
 'use strict'
 
 // app.js
-const express = require('express');
-const app = express();
-const db = require('./DB');
-const eventsRouter = require('./handlers/EventsController');
-const videoRouter = require('./handlers/VideosController');
+require('./DB')
+const express = require('express')
+const app = express()
+const eventsRouter = require('./handlers/EventsController')
+const videoRouter = require('./handlers/VideosController')
 
-app.use('/api/events', eventsRouter);
-app.use('/api/videos', videoRouter);
+app.use('/api/events', eventsRouter)
+app.use('/api/videos', videoRouter)
 
-module.exports = app;
+module.exports = app

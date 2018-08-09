@@ -1,5 +1,5 @@
 
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
 const EventSchema = new mongoose.Schema({
   event: { type: String },
@@ -7,9 +7,9 @@ const EventSchema = new mongoose.Schema({
   properties: { type: mongoose.Schema.Types.Mixed },
   createdAt: { type: Date }
 },
-  {
-    collection: 'events'
-  }
-);
+{
+  collection: 'events'
+}
+)
 
-module.exports = mongoose.model('Event', EventSchema);
+module.exports = mongoose.model('Event', EventSchema)
