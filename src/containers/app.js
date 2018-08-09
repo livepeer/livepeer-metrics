@@ -1,11 +1,12 @@
 import React from 'react';
-import { Route, NavLink } from 'react-router-dom'
-import Home from './home'
+// import { Route, NavLink } from 'react-router-dom'
+// import Home from './home'
 import Videos from './videos'
 
  const App = () => (
   <div>
-    <header>
+    <Videos />
+    {/* <header>
       <NavLink to="/">Home</NavLink>
       <NavLink to="/uivideos">Videos</NavLink>
     </header>
@@ -13,7 +14,7 @@ import Videos from './videos'
     <main>
       <Route exact path="/" component={Home} />
       <Route exact path="/uivideos" component={Videos} />
-    </main>
+    </main> */}
   </div>
 )
 

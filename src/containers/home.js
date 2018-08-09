@@ -1,11 +1,9 @@
 import React from 'react'
-import { Link } from 'react-router-dom'
+// import { Link } from 'react-router-dom'
 
 const Home = props => (
   <div>
-    <h1>Home</h1>
-    <p>Welcome home!</p>
-    <Link to="/videos">Go to videos metrics</Link>
+    {/* <Link to="/videos">Go to videos metrics</Link> */}
   </div>
 )
 

@@ -61,6 +61,9 @@ function videosAggregatorInt(events, resolve, reject) {
     const nonce = event.nonce
     const video = videos[nonce] || (videos[nonce] = {
       success: 'unknown',
+      createTime: null,
+      endTime: null,
+      streamDuration: 0,
       startSeq: 0,
       timeTillFirstTranscodedSegment: 0,
       firstTranscodedSegSeq: 0,
