@@ -153,6 +153,9 @@ function videosAggregatorInt(events, resolve, reject) {
         break
       case 'StartBroadcastClientFailed':
         video.createBroadcastClientFailed++
+        if (!video.createTime) {
+          video.createTime = event.createdAt
+        }
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.createBroadcastClientFailedReasons[reason] =

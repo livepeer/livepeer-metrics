@@ -7,3 +7,23 @@ body {
 .text-right {
   text-align: right;
 }
+
+.video-details {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.video-details_item {
+  margin: 0.2rem;
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.03);
+}
+
+.fails-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+}
+
+.fails-grid_item {
+  padding: 0.5rem;
+}
