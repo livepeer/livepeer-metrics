@@ -4,6 +4,7 @@ import { Route, withRouter } from 'react-router-dom'
 import { TabBar, Tab } from 'rmwc/Tabs';
 import { LinearProgress } from 'rmwc/LinearProgress'
 import { Snackbar } from 'rmwc/Snackbar'
+import Select from 'rmwc/Select'
 import ReactTable from 'react-table'
 import moment from 'moment'
 import axios from 'axios'
@@ -75,7 +76,16 @@ const _columns = [
   },
 ]
 
+const timeFrameLabels = [
+  { label: 'Last 24h', value: '24h' },
+  { label: 'Last Week', value: 'week' },
+  { label: 'Last Month', value: 'month' },
+  { label: 'All time', value: 'all' },
+]
+const isValidTimeFrame = timeFrame => !!timeFrameLabels.find(v => v.value === timeFrame)
+
 const detailsHeaders = {
+  nonce: 'nonce',
   startSeq: 'Start Seq',
   timeTillFirstTranscodedSegment: 'Time till first transcoded',
   firstTranscodedSegSeq: 'First transcoded seg seq',
@@ -99,20 +109,20 @@ const getTabPath = i => i < tabsPaths.length ? tabsPaths[i] : tabsPaths[0]
 const obj2grid = obj => {
   const rows = []
   Object.keys(obj).forEach(key => {
-      rows.push(<div className='fails-grid_item'>{key}</div>)
-      rows.push(<div className='fails-grid_item'>{obj[key]}</div>)
+    rows.push(<div className='fails-grid_item'>{key}</div>)
+    rows.push(<div className='fails-grid_item'>{obj[key]}</div>)
   })
   return (<div className='fails-grid'>{rows}</div>)
 }
-const sprint = v => typeof v == 'object' ? obj2grid(v) : String(v)
+const sprint = v => typeof v === 'object' ? obj2grid(v) : String(v)
 
 function obj2list(obj) {
-  return Object.keys(detailsHeaders).filter(key => key in obj && (typeof obj[key] != 'object' || Object.keys(obj[key]).length))
+  return Object.keys(detailsHeaders).filter(key => key in obj && (typeof obj[key] !== 'object' || Object.keys(obj[key]).length))
     .map(key => {
-    return (
-      <div class='video-details_item'>{detailsHeaders[key]}:&nbsp;{sprint(obj[key])}</div>
-    )
-  })
+      return (
+        <div class='video-details_item'>{detailsHeaders[key]}:&nbsp;{sprint(obj[key])}</div>
+      )
+    })
 }
 
 const VideoDetails = row => {
@@ -126,6 +136,7 @@ const VideoDetails = row => {
 class VideosView extends React.Component {
   state = {
     loading: false,
+    timeFrame: '',
     showErrorSnack: false,
     errorMessage: '',
     overview: {
@@ -156,8 +167,19 @@ class VideosView extends React.Component {
     }
   }
   componentDidMount() {
-    this.setState({ loading: true })
-    axios('/api/videos').then(resp => {
+    this.loadData()
+  }
+  loadData(_timeFrame) {
+    const startTime = Date.now()
+    this.videosLoadingStartTime = startTime
+    let timeFrame = _timeFrame === undefined ?
+      new URLSearchParams(this.props.location.search).get('timeFrame') : _timeFrame
+    timeFrame = isValidTimeFrame(timeFrame) ? timeFrame : ''
+    this.setState({ loading: true, timeFrame })
+    axios.get('/api/videos', { params: { timeFrame} }).then(resp => {
+      if (startTime !== this.videosLoadingStartTime) {
+        return
+      }
       this.setState({ loading: false })
       const overview = makeOverview(resp.data)
       calcVideosProps(resp.data.videos)
@@ -166,6 +188,9 @@ class VideosView extends React.Component {
         overview
       }))
     }).catch(err => {
+      if (startTime !== this.videosLoadingStartTime) {
+        return
+      }
       this.setState({ loading: false, showErrorSnack: true, errorMessage: err.toString() })
     })
   }
@@ -181,12 +206,34 @@ class VideosView extends React.Component {
         return 0
     }
   }
+  constructUrl(pathname) {
+    return { pathname, search: this.props.location.search }
+  }
+  getTabPath(i) {
+    return this.constructUrl(getTabPath(i))
+  }
   render() {
     return (<div>
+      <div className='text-right top-bar'>
+        <Select
+          value={this.state.timeFrame}
+          onChange={evt => {
+            this.props.history.push({
+              pathname: this.props.location.pathname,
+              search: '?timeFrame=' + evt.target.value
+            })
+            this.loadData(evt.target.value)
+          }}
+          label='Time frame'
+          placeholder='-- Select One --'
+          options={timeFrameLabels}
+        />
+      </div>
+
       {this.state.loading && <LinearProgress determinate={false}></LinearProgress>}
       <TabBar
         activeTabIndex={this.getTabIndex()}
-        onChange={evt => this.props.history.push(getTabPath(evt.detail.activeTabIndex))}
+        onChange={evt => this.props.history.push(this.getTabPath(evt.detail.activeTabIndex))}
       >
         <Tab>Overview</Tab>
         <Tab>Videos</Tab>
@@ -198,7 +245,7 @@ class VideosView extends React.Component {
       <Route exact path="/videos" render={(props) => (
         <ReactTable {...props} data={this.state.data.videos} columns={_columns}
           defaultSorted={[{ id: "createTime", desc: true }]}
-          className="-striped -highlight"
+          className="-striped -highlight content-area"
           showPagination={true} sortable={true}
           SubComponent={VideoDetails}
         />

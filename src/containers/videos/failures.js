@@ -24,13 +24,13 @@ const Failures = ({ failuresReasons }) => {
     { name: 'Segment upload failures', data: obj2list(upload) },
     { name: 'Segment transcode failures', data: obj2list(transcode) },
   ]
-  return (<div>
+  return (<div className='content-area' >
     <List dense>
       {groups.map(group => (
-      <ListGroup >
+      <ListGroup key={group.name} >
         <ListGroupSubheader ><b>{group.name}</b></ListGroupSubheader>
         {group.data.map(v => (
-          <ListItem>
+          <ListItem key={v} >
             <ListItemText>{v.name}</ListItemText>
             <ListItemMeta tag="span" basename="">{v.num}</ListItemMeta>
           </ListItem>

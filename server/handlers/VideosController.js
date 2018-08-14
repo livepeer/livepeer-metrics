@@ -8,6 +8,10 @@ function videosAggregator(events) {
   return new Promise(videosAggregatorInt.bind(null, events));
 }
 
+function getDayStart(createTime) {
+  return new Date(createTime).setUTCHours(0, 0, 0, 0)
+}
+
 function videosAggregatorInt(events, resolve, reject) {
   const videos = {};
   // TODO add flow annotation
@@ -50,6 +54,29 @@ function videosAggregatorInt(events, resolve, reject) {
   const createBroadcastClientFailedReasons = {}
   const uploadFailedReasons = {}
   const transcodeFailedReasons = {}
+  const byDay = new Map()
+  // by day key - seconds since epoch for the day start
+  // by day item :
+  /*
+    videosTotal: Integer
+    videosFailed: Integer
+    timeTillFirstTranscodedSegmentSum: Integer
+    videosWithTranscodedSegments: Integer
+    segmentsEmerged: Integer
+    emergedSincePrevSum: Integer
+    segmentsUploaded: Integer
+    segmentUploadTimeSum: Integer
+    segmentsUploadFailed: Integer
+    segmentsTranscoded: Integer
+    segmentsTranscodeTimeSum: Integer
+    segmentsTranscodeFailed: Integer
+    createBroadcastClientFailed: Integer
+    createBroadcastClientFailedReasons: {}
+    uploadFailedReasons: {}
+    transcodeFailedReasons: {}
+    streamCreateFailReasons: {}
+  */
+
 
   for (let event of events) {
     if (!event.nonce) {
@@ -61,6 +88,7 @@ function videosAggregatorInt(events, resolve, reject) {
     const nonce = event.nonce
     const video = videos[nonce] || (videos[nonce] = {
       success: 'unknown',
+      nonce: 0,
       createTime: null,
       endTime: null,
       streamDuration: 0,
@@ -83,6 +111,32 @@ function videosAggregatorInt(events, resolve, reject) {
       segmentsInFlight: new Map(),
       seqNoDif: new Map(),
     })
+    let day = video.createTime ? byDay.get(getDayStart(video.createTime)) || {} : {}
+    const createDay = createTime => {
+      const ds = getDayStart(createTime)
+      if (!byDay.has(ds)) {
+        day = {
+          videosTotal: 1,
+          videosFailed: 0,
+          timeTillFirstTranscodedSegmentSum: 0,
+          videosWithTranscodedSegments: 0,
+          segmentsEmerged: 0,
+          emergedSincePrevSum: 0,
+          segmentsUploaded: 0,
+          segmentUploadTimeSum: 0,
+          segmentsUploadFailed: 0,
+          segmentsTranscoded: 0,
+          segmentsTranscodeTimeSum: 0,
+          segmentsTranscodeFailed: 0,
+          createBroadcastClientFailed: 0,
+          createBroadcastClientFailedReasons: 0,
+          uploadFailedReasons: 0,
+          transcodeFailedReasons: 0,
+          streamCreateFailReasons: 0,
+        }
+        byDay.set(ds, day)
+      }
+    }
     switch (event.event) {
       case 'StreamCreated':
         videos[nonce] = {
@@ -91,6 +145,7 @@ function videosAggregatorInt(events, resolve, reject) {
           createTime: event.createdAt,
           success: 'unknown'
         }
+        createDay(event.createdAt)
         break
       case 'StreamEnded':
         //set video end time
@@ -155,6 +210,7 @@ function videosAggregatorInt(events, resolve, reject) {
         video.createBroadcastClientFailed++
         if (!video.createTime) {
           video.createTime = event.createdAt
+          createDay(event.createdAt)
         }
         if (event.properties.reason) {
           const reason = event.properties.reason
@@ -173,17 +229,19 @@ function videosAggregatorInt(events, resolve, reject) {
           video.streamCreateFailReasons[reason] = (video.streamCreateFailReasons[reason] || 0) + 1
         }
         break
-        default:
+      default:
     }
   }
 
   // Flatten the hash
   const videosArr = []
-  for (let vid in videos) {
-    videosArr.push(videos[vid])
+  for (let nonce in videos) {
+    videos[nonce].nonce = nonce
+    videosArr.push(videos[nonce])
   }
   resolve({
     videos: videosArr,
+    byDay,
     failuresReasons: {
       streamCreate: streamCreateFailReasons,
       createBroadcastClient: createBroadcastClientFailedReasons,
@@ -193,8 +251,20 @@ function videosAggregatorInt(events, resolve, reject) {
   });
 }
 
+const timeFrames = {
+  '24h': 24 * 3600 * 1000,
+  'week': 7 * 24 * 3600 * 1000,
+  'month': 31 * 24 * 3600 * 1000,
+  'all': -1
+}
+
 router.get('/', function (req, res) {
-  Events.find({}).sort({
+  const query = {}
+  if (req.query.timeFrame && req.query.timeFrame in timeFrames && req.query.timeFrame !== 'all') {
+    const from = Date.now() - timeFrames[req.query.timeFrame]
+    query.createdAt = { $gte: new Date(from) }
+  }
+  Events.find(query).sort({
     createdAt: 1
   }).exec(function (err, events) {
     if (err) return res.status(500).send('There was a problem finding the video.')

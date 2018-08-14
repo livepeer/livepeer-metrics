@@ -4,7 +4,7 @@ import moment from 'moment'
 
 const Overview = ({ overview }) => {
   const { videos, segments, fromTime, toTime, distinctBroadcasters } = overview
-  return (<div>
+  return (<div className='content-area' >
     <p>Number of distinct broadcasters: {distinctBroadcasters}</p>
     <p>Videos: total: {videos.total} failed: {videos.failed}</p>
     <p>Total videos duration: {moment.duration(videos.totalDuration).humanize()}</p>
