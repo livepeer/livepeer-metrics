@@ -231,9 +231,9 @@ class VideosView extends React.Component {
   }
   customReload() {
     const sd = this.state.startDate.clone()
-    const from = sd.utc().startOf('day').unix() * 1000
+    const from = sd.startOf('day').unix() * 1000
     const ed = this.state.endDate.clone()
-    const to = ed.utc().endOf('day').unix() * 1000
+    const to = ed.endOf('day').unix() * 1000
     this.loadData('custom', from, to)
   }
   render() {
