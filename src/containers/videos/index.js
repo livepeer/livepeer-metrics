@@ -11,12 +11,13 @@ import axios from 'axios'
 
 import Overview from './overview'
 import Failures from './failures'
+import ByDay from './byDay'
+import DetailsRow from './detailsRow'
 
-import { makeOverview, calcVideosProps } from './process'
+import { makeOverview } from './process'
 
 const dateFmt = 'MM Do, HH:mm'
-const _columns = [
-  {
+const _columns = [{
     Header: 'Date',
     columns: [
       {
@@ -44,30 +45,42 @@ const _columns = [
     Header: 'Average Duration',
     columns: [{
       Header: 'Since prev',
-      Cell: row => row.value.toFixed(2) + ' ms',
-      accessor: 'avgEmergedSincePrev',
+      Cell: row => {
+        const val = row.original.segmentsEmerged ?
+          row.original.emergedSincePrevSum / row.original.segmentsEmerged : 0
+        return val.toFixed(2) + ' ms'
+      },
       className: 'text-right'
     }, {
       Header: 'Upload',
-      Cell: row => row.value.toFixed(2) + ' ms',
-      accessor: 'avgUploadDuration',
+      Cell: row => {
+        const val = row.original.segmentsUploaded ?
+          row.original.segmentUploadTimeSum / row.original.segmentsUploaded : 0
+        return val.toFixed(2) + ' ms'
+      },
       className: 'text-right'
     }, {
       Header: 'Transcode',
-      Cell: row => row.value.toFixed(2) + ' ms',
-      accessor: 'avgTranscodeDuration',
+      Cell: row => {
+        const val = row.original.segmentsTranscoded ?
+          row.original.segmentsTranscodeTimeSum / row.original.segmentsTranscoded : 0
+        return val.toFixed(2) + ' ms'
+      },
       className: 'text-right'
-
     }]
-  },
-  {
+  }, {
     Header: 'Segments',
     columns: [
       {
         Header: 'Failures',
         accessor: 'failureRate',
         className: 'text-right',
-        Cell: row => row.value.toFixed(2) + '%'
+        Cell: row => {
+          const val = row.original.segmentsEmerged ?
+            (row.original.segmentsEmerged - row.original.segmentsTranscoded) /
+            row.original.segmentsEmerged * 100 : 0
+          return val.toFixed(2) + '%'
+        },
       },
       { Header: 'Emerged', accessor: 'segmentsEmerged', className: 'text-right' },
       { Header: 'Uploaded', accessor: 'segmentsUploaded', className: 'text-right' },
@@ -104,34 +117,9 @@ const detailsHeaders = {
   hlsStrmID: 'hlsStrmID',
 }
 
-const tabsPaths = ['/', '/videos', '/failures']
+const tabsPaths = ['/', '/videos', '/byday', '/failures']
 const getTabPath = i => i < tabsPaths.length ? tabsPaths[i] : tabsPaths[0]
-const obj2grid = obj => {
-  const rows = []
-  Object.keys(obj).forEach(key => {
-    rows.push(<div className='fails-grid_item'>{key}</div>)
-    rows.push(<div className='fails-grid_item'>{obj[key]}</div>)
-  })
-  return (<div className='fails-grid'>{rows}</div>)
-}
-const sprint = v => typeof v === 'object' ? obj2grid(v) : String(v)
 
-function obj2list(obj) {
-  return Object.keys(detailsHeaders).filter(key => key in obj && (typeof obj[key] !== 'object' || Object.keys(obj[key]).length))
-    .map(key => {
-      return (
-        <div class='video-details_item'>{detailsHeaders[key]}:&nbsp;{sprint(obj[key])}</div>
-      )
-    })
-}
-
-const VideoDetails = row => {
-  return (
-    <div style={{ padding: "20px" }} className='video-details' >
-      {obj2list(row.original)}
-    </div>
-  )
-}
 
 class VideosView extends React.Component {
   state = {
@@ -180,13 +168,8 @@ class VideosView extends React.Component {
       if (startTime !== this.videosLoadingStartTime) {
         return
       }
-      this.setState({ loading: false })
       const overview = makeOverview(resp.data)
-      calcVideosProps(resp.data.videos)
-      this.setState((prevState, props) => ({
-        data: { ...prevState.data, ...resp.data },
-        overview
-      }))
+      this.setState({ loading: false, overview, data: resp.data })
     }).catch(err => {
       if (startTime !== this.videosLoadingStartTime) {
         return
@@ -200,8 +183,10 @@ class VideosView extends React.Component {
         return 0
       case '/videos':
         return 1
-      case '/failures':
+      case '/byday':
         return 2
+      case '/failures':
+        return 3
       default:
         return 0
     }
@@ -237,6 +222,7 @@ class VideosView extends React.Component {
       >
         <Tab>Overview</Tab>
         <Tab>Videos</Tab>
+        <Tab>By day</Tab>
         <Tab>Failures reasons</Tab>
       </TabBar>
       <Route exact path="/" render={(props) => (
@@ -247,8 +233,11 @@ class VideosView extends React.Component {
           defaultSorted={[{ id: "createTime", desc: true }]}
           className="-striped -highlight content-area"
           showPagination={true} sortable={true}
-          SubComponent={VideoDetails}
+          SubComponent={DetailsRow.bind(null, detailsHeaders)}
         />
+      )} />
+      <Route exact path="/byday" render={(props) => (
+        <ByDay data={this.state.data.byDay} />
       )} />
       <Route exact path="/failures" render={(props) => (
         <Failures {...props} failuresReasons={this.state.data.failuresReasons} />

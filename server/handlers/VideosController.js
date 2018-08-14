@@ -60,6 +60,7 @@ function videosAggregatorInt(events, resolve, reject) {
   /*
     videosTotal: Integer
     videosFailed: Integer
+    videosTotalDuration: Integer,
     timeTillFirstTranscodedSegmentSum: Integer
     videosWithTranscodedSegments: Integer
     segmentsEmerged: Integer
@@ -116,8 +117,9 @@ function videosAggregatorInt(events, resolve, reject) {
       const ds = getDayStart(createTime)
       if (!byDay.has(ds)) {
         day = {
-          videosTotal: 1,
+          videosTotal: 0,
           videosFailed: 0,
+          videosTotalDuration: 0,
           timeTillFirstTranscodedSegmentSum: 0,
           videosWithTranscodedSegments: 0,
           segmentsEmerged: 0,
@@ -129,12 +131,14 @@ function videosAggregatorInt(events, resolve, reject) {
           segmentsTranscodeTimeSum: 0,
           segmentsTranscodeFailed: 0,
           createBroadcastClientFailed: 0,
-          createBroadcastClientFailedReasons: 0,
-          uploadFailedReasons: 0,
-          transcodeFailedReasons: 0,
-          streamCreateFailReasons: 0,
+          createBroadcastClientFailedReasons: {},
+          uploadFailedReasons: {},
+          transcodeFailedReasons: {},
+          streamCreateFailReasons: {},
         }
         byDay.set(ds, day)
+      } else {
+        day = byDay.get(ds)
       }
     }
     switch (event.event) {
@@ -146,6 +150,7 @@ function videosAggregatorInt(events, resolve, reject) {
           success: 'unknown'
         }
         createDay(event.createdAt)
+        day.videosTotal++
         break
       case 'StreamEnded':
         //set video end time
@@ -153,6 +158,7 @@ function videosAggregatorInt(events, resolve, reject) {
         //set status to succes
         video.success = 'true'
         video.streamDuration = video.endTime - video.createTime
+        day.videosTotalDuration += video.streamDuration
         break
       case 'JobCreated':
       case 'JobReused':
@@ -164,22 +170,30 @@ function videosAggregatorInt(events, resolve, reject) {
       case 'SegmentEmerged':
         video.segmentsEmerged++
         video.emergedSincePrevSum += event.properties.sincePrevious
+        day.segmentsEmerged++
+        day.emergedSincePrevSum += event.properties.sincePrevious
         break
       case 'SegmentUploaded':
         video.segmentsUploaded++
         video.segmentUploadTimeSum += event.properties.uploadDuration
+        day.segmentsUploaded++
+        day.segmentUploadTimeSum += event.properties.uploadDuration
         break
       case 'SegmentUploadFailed':
         video.segmentsUploadFailed++
+        day.segmentsUploadFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.uploadFailedReasons[reason] = (video.uploadFailedReasons[reason] || 0) + 1
+          day.uploadFailedReasons[reason] = (day.uploadFailedReasons[reason] || 0) + 1
           uploadFailedReasons[reason] = (uploadFailedReasons[reason] || 0) + 1
         }
         break
       case 'SegmentTranscoded':
         video.segmentsTranscoded++
         video.segmentsTranscodeTimeSum += event.properties.transcodeDuration
+        day.segmentsTranscoded++
+        day.segmentsTranscodeTimeSum += event.properties.transcodeDuration
         if (!video.timeTillFirstTranscodedSegment) {
           video.timeTillFirstTranscodedSegment = event.createdAt - video.createTime
           video.firstTranscodedSegSeq = event.properties.seqNo
@@ -194,9 +208,11 @@ function videosAggregatorInt(events, resolve, reject) {
         break
       case 'SegmentTranscodeFailed':
         video.segmentsTranscodeFailed++
+        day.segmentsTranscodeFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.transcodeFailedReasons[reason] = (video.transcodeFailedReasons[reason] || 0) + 1
+          day.transcodeFailedReasons[reason] = (day.transcodeFailedReasons[reason] || 0) + 1
           transcodeFailedReasons[reason] = (transcodeFailedReasons[reason] || 0) + 1
         }
         if (Object.prototype.hasOwnProperty.call(event.properties, 'segmentsInFlight')) {
@@ -212,21 +228,26 @@ function videosAggregatorInt(events, resolve, reject) {
           video.createTime = event.createdAt
           createDay(event.createdAt)
         }
+        day.createBroadcastClientFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.createBroadcastClientFailedReasons[reason] =
             (video.createBroadcastClientFailedReasons[reason] || 0) + 1
+          day.createBroadcastClientFailedReasons[reason] =
+            (day.createBroadcastClientFailedReasons[reason] || 0) + 1
           createBroadcastClientFailedReasons[reason] =
             (createBroadcastClientFailedReasons[reason] || 0) + 1
         }
         break
       case 'StreamCreateFailed':
         video.success = 'false'
+        day.videosFailed++
         if (event.properties.reason) {
           const reason = event.properties.reason
           video.reason = reason
           streamCreateFailReasons[reason] = (streamCreateFailReasons[reason] || 0) + 1
           video.streamCreateFailReasons[reason] = (video.streamCreateFailReasons[reason] || 0) + 1
+          day.streamCreateFailReasons[reason] = (day.streamCreateFailReasons[reason] || 0) + 1
         }
         break
       default:
@@ -239,9 +260,17 @@ function videosAggregatorInt(events, resolve, reject) {
     videos[nonce].nonce = nonce
     videosArr.push(videos[nonce])
   }
+  const byDayArr = []
+  const days = Array.from(byDay.keys())
+  days.sort()
+  for (let day of days) {
+    const dayObj = byDay.get(day)
+    dayObj.day = day
+    byDayArr.push(dayObj)
+  }
   resolve({
     videos: videosArr,
-    byDay,
+    byDay: byDayArr,
     failuresReasons: {
       streamCreate: streamCreateFailReasons,
       createBroadcastClient: createBroadcastClientFailedReasons,

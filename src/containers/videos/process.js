@@ -61,16 +61,3 @@ export function makeOverview(src) {
     distinctBroadcasters: broadcastersAddresses.size,
   }
 }
-
-export function calcVideosProps(videos) {
-  for (let vi of videos) {
-    vi.failureRate = vi.segmentsEmerged ?
-      (vi.segmentsEmerged - vi.segmentsTranscoded) / vi.segmentsEmerged * 100 : 0
-    vi.avgTranscodeDuration = vi.segmentsTranscoded ?
-      vi.segmentsTranscodeTimeSum / vi.segmentsTranscoded : 0
-    vi.avgUploadDuration = vi.segmentsUploaded ?
-      vi.segmentUploadTimeSum / vi.segmentsUploaded : 0
-    vi.avgEmergedSincePrev = vi.segmentsEmerged ?
-      vi.emergedSincePrevSum / vi.segmentsEmerged : 0
-  }
-}
