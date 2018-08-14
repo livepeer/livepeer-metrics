@@ -30,6 +30,17 @@ body {
 
 .top-bar {
   padding: 0 1rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+}
+
+.top-bar > button {
+  top: 0.5rem;
+}
+
+.top-bar > div {
+  padding: 0 1rem;
 }
 
 .content-area {

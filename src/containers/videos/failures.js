@@ -7,7 +7,6 @@ import {
   ListItemMeta,
   ListGroup,
   ListGroupSubheader,
-  ListDivider
 } from 'rmwc/List'
 
 

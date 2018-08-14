@@ -284,14 +284,23 @@ const timeFrames = {
   '24h': 24 * 3600 * 1000,
   'week': 7 * 24 * 3600 * 1000,
   'month': 31 * 24 * 3600 * 1000,
+  'custom': -1,
   'all': -1
 }
 
 router.get('/', function (req, res) {
   const query = {}
   if (req.query.timeFrame && req.query.timeFrame in timeFrames && req.query.timeFrame !== 'all') {
-    const from = Date.now() - timeFrames[req.query.timeFrame]
-    query.createdAt = { $gte: new Date(from) }
+    if (req.query.timeFrame === 'custom') {
+      const from = parseInt(req.query.from)
+      const to = parseInt(req.query.to)
+      if (!isNaN(from) && !isNaN(to) && from < to) {
+        query.createdAt = { $gte: new Date(from), $lte: new Date(to) }
+      }
+    } else {
+      const from = Date.now() - timeFrames[req.query.timeFrame]
+      query.createdAt = { $gte: new Date(from) }
+    }
   }
   Events.find(query).sort({
     createdAt: 1
