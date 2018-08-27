@@ -180,6 +180,10 @@ function videosAggregatorInt(events, resolve, reject) {
         day.segmentUploadTimeSum += event.properties.uploadDuration
         break
       case 'SegmentUploadFailed':
+        if (!video.createTime) {
+          video.createTime = event.createdAt
+          createDay(event.createdAt)
+        }
         video.segmentsUploadFailed++
         day.segmentsUploadFailed++
         if (event.properties.reason) {
