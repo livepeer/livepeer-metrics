@@ -309,7 +309,10 @@ router.get('/', function (req, res) {
   Events.find(query).sort({
     createdAt: 1
   }).exec(function (err, events) {
-    if (err) return res.status(500).send('There was a problem finding the video.')
+    if (err) {
+      console.log(err)
+      return res.status(500).send('There was a problem finding the video.')
+    }
     videosAggregator(events).then((videosArr) => {
       // TODO - remove: allow all - temporary, for debugging
       res.set('Access-Control-Allow-Origin', '*')
