@@ -211,6 +211,10 @@ function videosAggregatorInt(events, resolve, reject) {
         // TODO find a way to infer useful information from segmentsInFlight and seqNoDif
         break
       case 'SegmentTranscodeFailed':
+        if (!video.createTime) {
+          video.createTime = event.createdAt
+          createDay(event.createdAt)
+        }
         video.segmentsTranscodeFailed++
         day.segmentsTranscodeFailed++
         if (event.properties.reason) {
@@ -244,6 +248,10 @@ function videosAggregatorInt(events, resolve, reject) {
         }
         break
       case 'StreamCreateFailed':
+        if (!video.createTime) {
+          video.createTime = event.createdAt
+          createDay(event.createdAt)
+        }
         video.success = 'false'
         day.videosFailed++
         if (event.properties.reason) {
@@ -317,6 +325,9 @@ router.get('/', function (req, res) {
       // TODO - remove: allow all - temporary, for debugging
       res.set('Access-Control-Allow-Origin', '*')
       res.status(200).send(videosArr)
+    }).catch(err => {
+      console.log(err);
+      return res.status(500).send('There was a problem aggregating data.')
     });
   });
 });
