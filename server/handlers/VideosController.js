@@ -4,15 +4,15 @@ const express = require('express');
 const router = express.Router();
 const Events = require('./Events');
 
-function videosAggregator(events) {
-  return new Promise(videosAggregatorInt.bind(null, events));
+function videosAggregator(cursor, isCancelled) {
+  return new Promise(videosAggregatorInt.bind(null, cursor, isCancelled))
 }
 
 function getDayStart(createTime) {
   return new Date(createTime).setUTCHours(0, 0, 0, 0)
 }
 
-function videosAggregatorInt(events, resolve, reject) {
+function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
   const videos = {};
   // TODO add flow annotation
   /*
@@ -55,6 +55,7 @@ function videosAggregatorInt(events, resolve, reject) {
   const uploadFailedReasons = {}
   const transcodeFailedReasons = {}
   const byDay = new Map()
+  let eventsCount = 0
   // by day key - seconds since epoch for the day start
   // by day item :
   /*
@@ -77,11 +78,58 @@ function videosAggregatorInt(events, resolve, reject) {
     transcodeFailedReasons: {}
     streamCreateFailReasons: {}
   */
+  const finish = function() {
+    // Flatten the hash
+    console.log(`processed ${eventsCount} events`)
+    const videosArr = []
+    for (let nonce in videos) {
+      videos[nonce].nonce = nonce
+      videosArr.push(videos[nonce])
+    }
+    const byDayArr = []
+    const days = Array.from(byDay.keys())
+    days.sort()
+    for (let day of days) {
+      const dayObj = byDay.get(day)
+      dayObj.day = day
+      byDayArr.push(dayObj)
+    }
+    resolve({
+      videos: videosArr,
+      byDay: byDayArr,
+      failuresReasons: {
+        streamCreate: streamCreateFailReasons,
+        createBroadcastClient: createBroadcastClientFailedReasons,
+        upload: uploadFailedReasons,
+        transcode: transcodeFailedReasons
+      }
+    })
+  }
 
-
-  for (let event of events) {
+  // for (let event of events) 
+  const processEvent = function(event) {
+    // console.log('=== processEvent got evet:', event)
+    if (isCancelled()) {
+      console.log('request was cancelled')
+      throw 'cancelled'
+    }
+    if (!event) {
+      finish()
+      return
+    }
+    const cont = () => {
+      setImmediate(() => {
+        cursor.next().then(processEvent).catch(reject)
+      })
+    }
     if (!event.nonce) {
-      continue
+      // continue
+      cont()
+      return
+    }
+    eventsCount++
+    if (eventsCount % 10000 === 0) {
+      console.log(`processed ${eventsCount} events so far`)
     }
     if (!event.properties) {
       event.properties = {}
@@ -264,32 +312,9 @@ function videosAggregatorInt(events, resolve, reject) {
         break
       default:
     }
+    cont()
   }
-
-  // Flatten the hash
-  const videosArr = []
-  for (let nonce in videos) {
-    videos[nonce].nonce = nonce
-    videosArr.push(videos[nonce])
-  }
-  const byDayArr = []
-  const days = Array.from(byDay.keys())
-  days.sort()
-  for (let day of days) {
-    const dayObj = byDay.get(day)
-    dayObj.day = day
-    byDayArr.push(dayObj)
-  }
-  resolve({
-    videos: videosArr,
-    byDay: byDayArr,
-    failuresReasons: {
-      streamCreate: streamCreateFailReasons,
-      createBroadcastClient: createBroadcastClientFailedReasons,
-      upload: uploadFailedReasons,
-      transcode: transcodeFailedReasons
-    }
-  });
+  cursor.next().then(processEvent).catch(reject)
 }
 
 const timeFrames = {
@@ -301,6 +326,7 @@ const timeFrames = {
 }
 
 router.get('/', function (req, res) {
+  console.log('got /videos request', req.query)
   const query = {}
   if (req.query.timeFrame && req.query.timeFrame in timeFrames && req.query.timeFrame !== 'all') {
     if (req.query.timeFrame === 'custom') {
@@ -314,22 +340,20 @@ router.get('/', function (req, res) {
       query.createdAt = { $gte: new Date(from) }
     }
   }
-  Events.find(query).sort({
-    createdAt: 1
-  }).exec(function (err, events) {
-    if (err) {
-      console.log(err)
-      return res.status(500).send('There was a problem finding the video.')
+  let cancelled = false
+  req.on('close', () => cancelled = true)
+  const cursor = Events.find(query).sort({ createdAt: 1 }).cursor()
+  videosAggregator(cursor, () => cancelled).then((videosArr) => {
+    // TODO - remove: allow all - temporary, for debugging
+    res.set('Access-Control-Allow-Origin', '*')
+    res.status(200).send(videosArr)
+  }).catch(err => {
+    if (err = 'cancelled') {
+      return
     }
-    videosAggregator(events).then((videosArr) => {
-      // TODO - remove: allow all - temporary, for debugging
-      res.set('Access-Control-Allow-Origin', '*')
-      res.status(200).send(videosArr)
-    }).catch(err => {
-      console.log(err);
-      return res.status(500).send('There was a problem aggregating data.')
-    });
-  });
-});
+    console.log(err);
+    return res.status(500).send('There was a problem aggregating data.')
+  })
+})
 
 module.exports = router;
