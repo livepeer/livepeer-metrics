@@ -348,6 +348,9 @@ router.get('/', function (req, res) {
     res.set('Access-Control-Allow-Origin', '*')
     res.status(200).send(videosArr)
   }).catch(err => {
+    if (cursor) {
+      cursor.close()
+    }
     if (err = 'cancelled') {
       return
     }
