@@ -1,0 +1,48 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.video-details {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.video-details_item {
+  margin: 0.2rem;
+  padding: 0.5rem;
+  background: rgba(0,0,0,0.03);
+}
+
+.fails-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+}
+
+.fails-grid_item {
+  padding: 0.5rem;
+}
+
+.top-bar {
+  padding: 0 1rem;
+  display: flex;
+  justify-content: flex-end;
+  align-items: baseline;
+}
+
+.top-bar > button {
+  top: 0.5rem;
+}
+
+.top-bar > div {
+  padding: 0 1rem;
+}
+
+.content-area {
+  padding: 0 0.5rem;
+}
