@@ -1,0 +1,33 @@
+# This file is a systemd template for the service. To
+# register service with systemd, place this file in
+# /lib/systemd/system/ and start service using systemctl:
+#
+# Enable livemetrics to start on boot:
+#         systemctl enable livemetrics.service
+#
+# Start livemetrics immediately:
+#         systemctl start livemetrics.service
+#
+# Stop livemetrics:
+#         systemctl stop livemetrics.service
+#
+# Status:
+#         systemctl status livemetrics.service
+
+[Unit]
+Description=LivePeer metrics service
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/home/ubuntu/livepeer-metrics/.env
+WorkingDirectory=/home/ubuntu/livepeer-metrics
+ExecStart=/usr/local/bin/node server/Server.js
+StandardError=syslog
+StandardOutput=syslog
+SyslogIdentifier=livemetrics
+Restart=always
+User=ubuntu
+
+[Install]
+WantedBy=multi-user.target
