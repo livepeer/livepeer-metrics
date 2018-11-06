@@ -54,6 +54,7 @@ function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
   const createBroadcastClientFailedReasons = {}
   const uploadFailedReasons = {}
   const transcodeFailedReasons = {}
+  const transcodeFailedSubTypes = {}
   const byDay = new Map()
   let eventsCount = 0
   // by day key - seconds since epoch for the day start
@@ -101,7 +102,8 @@ function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
         streamCreate: streamCreateFailReasons,
         createBroadcastClient: createBroadcastClientFailedReasons,
         upload: uploadFailedReasons,
-        transcode: transcodeFailedReasons
+        transcode: transcodeFailedReasons,
+        transcodeSubtypes: transcodeFailedSubTypes
       }
     })
   }
@@ -156,6 +158,7 @@ function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
       createBroadcastClientFailedReasons: {},
       uploadFailedReasons: {},
       transcodeFailedReasons: {},
+      transcodeFailedSubTypes: {},
       streamCreateFailReasons: {},
       segmentsInFlight: new Map(),
       seqNoDif: new Map(),
@@ -182,6 +185,7 @@ function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
           createBroadcastClientFailedReasons: {},
           uploadFailedReasons: {},
           transcodeFailedReasons: {},
+          transcodeFailedSubTypes: {},
           streamCreateFailReasons: {},
         }
         byDay.set(ds, day)
@@ -270,6 +274,12 @@ function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
           video.transcodeFailedReasons[reason] = (video.transcodeFailedReasons[reason] || 0) + 1
           day.transcodeFailedReasons[reason] = (day.transcodeFailedReasons[reason] || 0) + 1
           transcodeFailedReasons[reason] = (transcodeFailedReasons[reason] || 0) + 1
+        }
+        if (event.properties.subType) {
+          const subType = event.properties.subType
+          video.transcodeFailedSubTypes[subType] = (video.transcodeFailedSubTypes[subType] || 0) + 1
+          day.transcodeFailedSubTypes[subType] = (day.transcodeFailedSubTypes[subType] || 0) + 1
+          transcodeFailedSubTypes[subType] = (transcodeFailedSubTypes[subType] || 0) + 1
         }
         if (Object.prototype.hasOwnProperty.call(event.properties, 'segmentsInFlight')) {
           video.segmentsInFlight.set(event.seqNo, event.properties.segmentsInFlight)

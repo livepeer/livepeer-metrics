@@ -16,12 +16,13 @@ function obj2list(obj) {
 }
 
 const Failures = ({ failuresReasons }) => {
-  const { streamCreate, createBroadcastClient, upload, transcode } = failuresReasons
+  const { streamCreate, createBroadcastClient, upload, transcode, transcodeSubtypes } = failuresReasons
   const groups = [
     { name: 'Stream creation failures', data: obj2list(streamCreate) },
     { name: 'Create broadcast client failures', data: obj2list(createBroadcastClient) },
     { name: 'Segment upload failures', data: obj2list(upload) },
     { name: 'Segment transcode failures', data: obj2list(transcode) },
+    { name: 'Segment transcode failures subtypes', data: obj2list(transcodeSubtypes) },
   ]
   return (<div className='content-area' >
     <List dense>

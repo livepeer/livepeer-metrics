@@ -110,6 +110,7 @@ const detailsHeaders = {
   createBroadcastClientFailedReasons: 'Create client failed reasons',
   uploadFailedReasons: 'Upload failed reasons',
   transcodeFailedReasons: 'Transcode failed reasons',
+  transcodeFailedSubTypes: 'Transcode failed by subtypes',
   streamCreateFailReasons: 'Stream create fail reasons',
   segmentsInFlight: 'Segments in flight',
   seqNoDif: 'SeqNo difference',
