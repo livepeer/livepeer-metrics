@@ -12,9 +12,11 @@ app.use(cors())
 const eventsRouter = require('./handlers/EventsController')
 const p2pEventsRouter = require('./handlers/P2PEventsController')
 const videoRouter = require('./handlers/VideosController')
+const latencyRouter = require('./handlers/latency').router
 
 app.use('/api/events', eventsRouter)
 app.use('/api/p2pevents', p2pEventsRouter)
 app.use('/api/videos', videoRouter)
+app.use('/api/latency', latencyRouter)
 
 module.exports = app

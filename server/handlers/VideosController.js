@@ -3,6 +3,7 @@
 const express = require('express');
 const router = express.Router();
 const Events = require('./Events');
+const utils = require('./utils')
 
 function videosAggregator(cursor, isCancelled) {
   return new Promise(videosAggregatorInt.bind(null, cursor, isCancelled))
@@ -327,29 +328,9 @@ function videosAggregatorInt(cursor, isCancelled, resolve, reject) {
   cursor.next().then(processEvent).catch(reject)
 }
 
-const timeFrames = {
-  '24h': 24 * 3600 * 1000,
-  'week': 7 * 24 * 3600 * 1000,
-  'month': 31 * 24 * 3600 * 1000,
-  'custom': -1,
-  'all': -1
-}
-
 router.get('/', function (req, res) {
   console.log('got /videos request', req.query)
-  const query = {}
-  if (req.query.timeFrame && req.query.timeFrame in timeFrames && req.query.timeFrame !== 'all') {
-    if (req.query.timeFrame === 'custom') {
-      const from = parseInt(req.query.from)
-      const to = parseInt(req.query.to)
-      if (!isNaN(from) && !isNaN(to) && from < to) {
-        query.createdAt = { $gte: new Date(from), $lte: new Date(to) }
-      }
-    } else {
-      const from = Date.now() - timeFrames[req.query.timeFrame]
-      query.createdAt = { $gte: new Date(from) }
-    }
-  }
+  const query = utils.parseTimeFrame(req.query)
   let cancelled = false
   req.on('close', () => cancelled = true)
   const cursor = Events.find(query).sort({ createdAt: 1 }).cursor()
