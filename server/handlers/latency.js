@@ -64,6 +64,12 @@ function getAvgPipeline() {
 
 function getCommonPipeline() {
     return [{
+        $match: {
+            $nor: [
+                { "ts": { $type: "null" } },
+            ]
+        }
+    }, {
         $addFields: {
             ets: {
                 $let: {
