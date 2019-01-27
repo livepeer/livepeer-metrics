@@ -29,6 +29,11 @@ router.get('/', function (req, res) {
   console.log('got /latency request', req.query)
   const query = utils.parseTimeFrame(req.query)
   Promise.all([getAverages(query, getAvgPipeline), getAverages(query, getMedianPipeline)]).then(averages => {
+    if (!averages || averages.length < 2) {
+        return [[], []]
+    }
+    // console.log('averages:', averages)
+    // console.log('averages toArray:', averages[0].toArray)
     return Promise.all([averages[0].toArray(), averages[1].toArray()])
   }).then(data => {
     // join data
