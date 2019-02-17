@@ -15,7 +15,7 @@ function getAverages(query, pipelineGetter) {
     const col = mongoose.connection.collection('events')
     const pipeline = Object.keys(query).length > 0 ? [{
         $match: query }, ...pipelineGetter()] : [...pipelineGetter()]
-    col.aggregate(pipeline, { allowDiskUse: false, promoteLongs: true }, (err, res) => {
+    col.aggregate(pipeline, { allowDiskUse: true, promoteLongs: true }, (err, res) => {
         if (err) {
             reject(err)
             return
