@@ -1,31 +1,33 @@
 'use strict'
 
+const mongoose = require('mongoose')
 const express = require('express')
 const bodyParser = require('body-parser')
-const Events = require('./Events')
 const router = express.Router()
-const NodeCache = require( "node-cache" )
-const nonceMap = new NodeCache({ stdTTL: 600, useClones: false })
+
+const P2PEventSchema = new mongoose.Schema({
+  event: { type: String },
+  nonce: { type: String },
+  properties: { type: mongoose.Schema.Types.Mixed },
+  createdAt: { type: Date, index: true }
+},
+{
+  collection: 'p2pevents'
+}
+)
+
+const p2pEvent = mongoose.model('P2PEvent', P2PEventSchema)
 
 router.use(bodyParser.json())
 
 // CREATES A Event
 router.post('/', function (req, res) {
-  console.log(`v2  got request body:`, req.body)
+  console.log(`p2p event got request body:`, req.body)
   const body = req.body
   if (body.event != null) {
-    const mid = body.properties && body.properties.manifestID
-    if (body.nonce !== '0' && mid) {
-      nonceMap.set(body.properties.manifestID, body.nonce)
-    } else if (body.nonce === '0' && mid) {
-      body.nonce = nonceMap.get(mid) || '0'
-    }
-    Events.create({
+    p2pEvent.create({
       event: body.event,
       nonce: body.nonce,
-      nodeId: body.nodeId,
-      nodeType: body.nodeType,
-      ts: new Date(+body.ts),
       properties: body.properties,
       createdAt: new Date()
     }).then(event => {
@@ -40,7 +42,7 @@ router.post('/', function (req, res) {
 })
 
 router.get('/', function (req, res) {
-  Events.find({}, function (err, events) {
+  p2pEvent.find({}, function (err, events) {
     if (err) return res.status(500).send('There was a problem finding the event.')
     res.status(200).send(events)
   })

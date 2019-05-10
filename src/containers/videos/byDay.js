@@ -83,6 +83,7 @@ const detailsHeaders = {
   uploadFailedReasons: 'Upload failed reasons',
   transcodeFailedReasons: 'Transcode failed reasons',
   streamCreateFailReasons: 'Stream create fail reasons',
+  transcodeFailedSubTypes: 'Transcode failed by subtypes',
 }
 
 const ByDay = (props) => {

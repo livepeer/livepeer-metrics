@@ -3,9 +3,9 @@ import React from 'react'
 
 const obj2grid = obj => {
   const rows = []
-  Object.keys(obj).forEach(key => {
-    rows.push(<div className='fails-grid_item'>{key}</div>)
-    rows.push(<div className='fails-grid_item'>{obj[key]}</div>)
+  Object.keys(obj).forEach((key, i) => {
+    rows.push(<div className='fails-grid_item' key={key} >{key}</div>)
+    rows.push(<div className='fails-grid_item' key={key + '-' + i} >{obj[key]}</div>)
   })
   return (<div className='fails-grid'>{rows}</div>)
 }
@@ -15,7 +15,7 @@ function obj2list(headers, obj) {
   return Object.keys(headers).filter(key => key in obj && (typeof obj[key] !== 'object' || Object.keys(obj[key]).length))
     .map(key => {
       return (
-        <div class='video-details_item'>{headers[key]}:&nbsp;{sprint(obj[key])}</div>
+        <div className='video-details_item' key={key}>{headers[key]}:&nbsp;{sprint(obj[key])}</div>
       )
     })
 }

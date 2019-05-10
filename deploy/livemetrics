@@ -1,0 +1,12 @@
+/var/log/livemetrics/*.log {
+	daily
+	missingok
+	rotate 14
+	compress
+	delaycompress
+	notifempty
+	sharedscripts
+	postrotate
+        /etc/init.d/rsyslog force-reload >/dev/null 2>&1
+	endscript
+}

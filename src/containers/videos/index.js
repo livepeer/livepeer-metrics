@@ -57,16 +57,25 @@ const _columns = [{
   }, {
     Header: 'Upload',
     Cell: row => {
-      const val = row.original.segmentsUploaded ?
+      const valOld = row.original.segmentsUploaded ?
         row.original.segmentUploadTimeSum / row.original.segmentsUploaded : 0
+      const val = row.original.avgTillTranscode || valOld
+      return val.toFixed(2) + ' ms'
+    },
+    className: 'text-right'
+  }, {
+    Header: 'Download',
+    Cell: row => {
+      const val = row.original.avgAfterTranscode || 0
       return val.toFixed(2) + ' ms'
     },
     className: 'text-right'
   }, {
     Header: 'Transcode',
     Cell: row => {
-      const val = row.original.segmentsTranscoded ?
+      const valOld = row.original.segmentsTranscoded ?
         row.original.segmentsTranscodeTimeSum / row.original.segmentsTranscoded : 0
+      const val = row.original.avgTranscodeDuration || valOld
       return val.toFixed(2) + ' ms'
     },
     className: 'text-right'
@@ -89,6 +98,12 @@ const _columns = [{
     { Header: 'Uploaded', accessor: 'segmentsUploaded', className: 'text-right' },
     { Header: 'Transcoded', accessor: 'segmentsTranscoded', className: 'text-right' },
   ]
+}, {
+  Header: 'Latency',
+  columns: [
+    { Header: 'Avg Transcoded Appeared', accessor: 'avgTranscodedAppeared', className: 'text-right' },
+    { Header: 'Median Transcoded Appeared', accessor: 'medianTranscodedAppeared', className: 'text-right' },
+  ]
 },
 ]
 
@@ -110,6 +125,7 @@ const detailsHeaders = {
   createBroadcastClientFailedReasons: 'Create client failed reasons',
   uploadFailedReasons: 'Upload failed reasons',
   transcodeFailedReasons: 'Transcode failed reasons',
+  transcodeFailedSubTypes: 'Transcode failed by subtypes',
   streamCreateFailReasons: 'Stream create fail reasons',
   segmentsInFlight: 'Segments in flight',
   seqNoDif: 'SeqNo difference',
@@ -183,13 +199,29 @@ class VideosView extends React.Component {
     if (to) {
       params.to = to
     }
-    axios.get('/api/videos', { params }).then(resp => {
+    Promise.all([axios.get('/api/videos', { params }), axios.get('/api/latency', { params })]).then(resps => {
       if (startTime !== this.videosLoadingStartTime) {
         return
       }
-      const overview = makeOverview(resp.data)
-      this.setState({ loading: false, overview, data: resp.data })
+      console.log('resps:', resps)
+      const vresp = resps[0].data
+      const lresp = resps[1].data
+      const overview = makeOverview(vresp)
+      // join
+      const latency = new Map()
+      lresp.forEach(el => {
+        latency.set(el._id.nonce, el)
+      })
+      console.log(latency)
+      vresp.videos = vresp.videos.map(el => {
+        const p = latency.has(el.nonce) ? latency.get(el.nonce) : {}
+        console.log('p:', p)
+        return {...el, ...p}
+      })
+      console.log(vresp.videos)
+      this.setState({ loading: false, overview, data: vresp })
     }).catch(err => {
+      console.error(err)
       if (startTime !== this.videosLoadingStartTime) {
         return
       }
